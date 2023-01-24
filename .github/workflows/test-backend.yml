@@ -1,0 +1,70 @@
+name: Backend Tests
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/test-backend.yml"
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+    env:
+      working-directory: ./backend
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.8.10" # using SemVer's version range syntax
+          architecture: "x64"
+
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Python Packages
+        working-directory: ${{ env.working-directory }}
+        run: |
+          sudo apt-get install python3-setuptools
+          pip3 install wheel
+          pip3 install -r deploy/requirements.txt
+
+      - name: Create secret.key
+        working-directory: ${{ env.working-directory }}
+        run: echo `cat /dev/urandom | head -1 | md5sum | head -c 32` > data/config/secret.key
+
+      - name: Create Demo Database
+        working-directory: ${{ env.working-directory }}
+        run: |
+          docker run -it -d -p 127.0.0.1:5432:5432 -e POSTGRES_DB=codingplatform -e POSTGRES_USER=codingplatform -e POSTGRES_PASSWORD=codingplatform --name db postgres:12-alpine
+          docker run -it -d -p 127.0.0.1:6379:6379 --name redis redis:4.0-alpine
+
+      - name: Migrate Database
+        working-directory: ${{ env.working-directory }}
+        run: python3 manage.py migrate
+
+      - name: Docker Containers List
+        run: docker ps -a
+
+      - name: Check Python Code Style
+        working-directory: ${{ env.working-directory }}
+        run: python3 -m flake8 .
+
+      - name: Django Test
+        working-directory: ${{ env.working-directory }}
+        run: python3 -m coverage run --include="$PWD/*" manage.py test
+
+      - name: Result of Django Test
+        working-directory: ${{ env.working-directory }}
+        run: python3 -m coverage report

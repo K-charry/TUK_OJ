@@ -1,0 +1,78 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    environment:
+      - POSTGRES_HOST=db
+      - REDIS_HOST=redis
+      - DISABLE_HEARTBEAT=1
+      - JUDGE_SERVER_URL=http://judge-server-dev:8080
+      - JUDGE_SERVER_TOKEN=CHANGE_THIS
+      - DISPLAY=:14
+      - LIBGL_ALWAYS_INDIRECT=0
+      - CYPRESS_BASE_URL=http://localhost:8080
+    volumes_from:
+      - x11-bridge:rw
+    depends_on:
+      - x11-bridge
+  judge-server-dev:
+    image: skkunpc/judge-server
+    container_name: judge-server-dev
+    restart: always
+    read_only: true
+    cap_drop:
+      - SETPCAP
+      - MKNOD
+      - NET_BIND_SERVICE
+      - SYS_CHROOT
+      - SETFCAP
+      - FSETID
+    tmpfs:
+      - /tmp
+    volumes:
+      - ../backend/data/test_case:/test_case:ro
+      - judger-data:/judger
+    environment:
+      - DISABLE_HEARTBEAT=1
+      - TOKEN=CHANGE_THIS
+
+  db:
+    image: postgres:12-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=codingplatform
+      - POSTGRES_USER=codingplatform
+      - POSTGRES_DB=codingplatform
+
+  redis:
+    image: redis:4.0-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+  x11-bridge:
+    image: jare/x11-bridge
+    volumes:
+      - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+    ports:
+      - "10000:10000"
+    restart: always
+    environment:
+      - MODE=tcp
+      - XPRA_HTML=yes
+      - DISPLAY=:14
+      - XPRA_TCP_PORT=10000
+      - XPRA_PASSWORD=CHANGE_THIS
+
+volumes:
+  postgres-data: null
+  redis-data: null
+  judger-data: null

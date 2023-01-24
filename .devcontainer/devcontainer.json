@@ -1,0 +1,28 @@
+{
+  "name": "Coding Platform",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "forwardPorts": [10000],
+
+  "postCreateCommand": "./.devcontainer/postCreateCommand.sh",
+
+  "extensions": [
+    "bradlc.vscode-tailwindcss",
+    "dbaeumer.vscode-eslint",
+    "donjayamanne.githistory",
+    "eamodio.gitlens",
+    "editorconfig.editorconfig",
+    "gruntfuggly.todo-tree",
+    "johnsoncodehk.volar",
+    "mhutchie.git-graph",
+    "ms-python.python",
+    "naumovs.color-highlight",
+    "oderwat.indent-rainbow",
+    "pkief.material-icon-theme",
+    "rangav.vscode-thunder-client"
+  ],
+
+  // Connect as non-root user (https://code.visualstudio.com/remote/advancedcontainers/add-nonroot-user)
+  "remoteUser": "vscode"
+}
